@@ -1,11 +1,55 @@
-The system is hosted in a single AWS Region, using two Availability Zones (AZs) to ensure high availability and fault tolerance. A Virtual Private Cloud (VPC) with the CIDR block 10.0.0.0/16 is created to provide a logically isolated network environment.
-Each AZ contains:
-•	A Public Subnet (e.g., 10.0.1.0/24 and 10.0.3.0/24) that hosts an Auto Scaling Group of EC2 instances which serve as web/application servers. These instances are connected to an Application Load Balancer (ALB) to distribute incoming traffic evenly and improve fault tolerance and responsiveness.
-•	A Private Subnet (10.0.2.0/24 and 10.0.4.0/24) that hosts MySQL databases, likely deployed using Amazon RDS, to securely store and manage application data. These databases are isolated from internet access to ensure strong security.
-To allow private instances (such as RDS or backend services) to access the internet for software updates or patching without being exposed, a NAT Gateway is deployed in the public subnet. The NAT Gateway allows outbound internet traffic from the private subnets while preventing inbound connections from the internet, maintaining a secure setup.
-Security Groups (SGs) are used as virtual firewalls to control inbound and outbound traffic:
-•	The EC2 instances' security group allows inbound HTTP/HTTPS traffic from the ALB and allows outbound traffic to the internet.
-•	The RDS security group allows inbound connections only from the EC2 instances in the application layer, ensuring that only trusted resources can access the database.
-•	Security Groups help enforce the principle of least privilege and ensure that each component only communicates with what it needs to.
-An Internet Gateway is attached to the VPC, enabling public subnets (and the NAT Gateway) to communicate with the internet.
+In my design I used multiple Availability Zones within a single AWS Region to ensure redundancy, fault tolerance, and scalability.
+
+At the core of this architecture is a Virtual Private Cloud (VPC) with a CIDR block of 10.0.0.0/16. This VPC provides a logically isolated network in which all resources are launched. The network is divided into multiple subnets: public subnets for web servers and private subnets for databases.
+
+Two Availability Zones are used to enhance availability and fault tolerance. Each zone contains one public subnet and one private subnet. The public subnets (10.0.1.0/24 and another similar range in the second AZ) host an Auto Scaling Group of EC2 instances. These instances serve as web servers and are placed in public subnets so they can handle incoming HTTP/HTTPS requests from users through the app load balancer. The Auto Scaling Group ensures that the number of EC2 instances automatically adjusts based on traffic, providing both performance and cost-efficiency.
+
+In front of the Auto Scaling Group, a Load Balancer is used to distribute traffic evenly across the EC2 instances. This improves application availability and provides a single point of access for users.
+
+The Internet Gateway attached to the VPC enables communication between the instances in public subnets and the internet. This is essential for users to access the application from outside and for the instances to download updates or external packages.
+
+The private subnets (e.g., 10.0.2.0/24) in each Availability Zone host RDS database instances with multi AZ deployment. These databases are not accessible from the internet and are protected within the private network, enhancing data security. They can only be accessed by the web servers in the public subnets, typically over a secure connection. The use of databases in both Availability Zones ensures high availability and failover capability in case one AZ goes down.
+There is nat gateway in public subnets in order to make databases be able to go to internet and install updates even so they are in private subnet without exposing them to the internet
+Security groups
+Load Balancer Security Group (SG-LB)
+Inbound Rules:
+Type	Protocol	Port	Source
+HTTP	TCP	80	0.0.0.0/0
+HTTPS	TCP	443	0.0.0.0/0
+Outbound Rules:
+Type	Protocol	Port	Destination
+All traffic	All	All	0.0.0.0/0
+
+Web Server EC2 Security Group (SG-Web)
+Inbound Rules:
+Type	Protocol	Port Range	Source
+HTTP	TCP	80	SG-LB (Load Balancer SG)
+HTTPS	TCP	443	SG-LB
+Outbound Rules:
+Type	Protocol	Port Range	Destination
+All traffic	All	All	0.0.0.0/0
+
+RDS Database Security Group (SG-DB)
+Inbound Rules:
+Type	Protocol	Port Range	Source
+MySQL/Aurora (or your DB port)	TCP	3306	SG-Web (Web Server SG)
+Outbound Rules:
+Type	Protocol	Port Range	Destination
+All traffic	All	All	0.0.0.0/0
+Route tables
+1. Public Route Table
+•	Associated with: Public Subnets
+•	Routes:
+
+Destination	Target 
+10.0.0.0/16	local
+0.0.0.0/0	internet Gateway
+________________________________________
+2. Private Route Tables AZ-a and AZ-b
+•	Associated with: Private Subnets
+•	Routes:
+
+ Destination	Target 
+10.0.0.0/16	local
+0.0.0.0/0	NAT Gateway
 
