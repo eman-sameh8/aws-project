@@ -1,4 +1,5 @@
-# AWS Architecture Design
+# Scalable Web Application with ALB and Auto Scaling
+
 
 In my design I used multiple Availability Zones within a single AWS Region to ensure redundancy, fault tolerance, and scalability.
 
