@@ -60,7 +60,7 @@ There is NAT Gateway in public subnets in order to make databases be able to go 
 
 | Type            | Protocol | Port Range | Source              |
 |-----------------|----------|------------|---------------------|
-| MySQL/Aurora    | TCP      | 3306       | SG-Web (Web Server SG) |
+| MySQL    | TCP      | 3306       | SG-Web (Web Server SG) |
 
 *Outbound Rules:*
 
