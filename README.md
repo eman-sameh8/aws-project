@@ -1,4 +1,5 @@
 # Scalable Web Application with ALB and Auto Scaling
+![image](https://github.com/user-attachments/assets/a5d374e9-eb75-480b-a77f-985fb5db518f)
 
 
 In my design I used multiple Availability Zones within a single AWS Region to ensure redundancy, fault tolerance, and scalability.
